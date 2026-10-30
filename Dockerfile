@@ -2,10 +2,13 @@
 FROM node:20.11-slim AS builder
 WORKDIR /app
 COPY app/package.json app/package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && npm install --no-save --omit=dev proxy-addr@2.0.8
 COPY app/ ./
 
 FROM node:20.11-slim
+# patch base-image OS packages and drop npm (unused at runtime) to clear CRITICAL CVEs
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 WORKDIR /app
 COPY --from=builder /app /app
 ENV NODE_ENV=production
